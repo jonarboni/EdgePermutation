@@ -116,14 +116,19 @@ public class Permutation
 	}
 	
 	
-	
-	
-	//function to test if the 3-uplet is valid for a certain triangle
-	public static boolean validForPPP(Permutation p1,Permutation p2, Permutation p3)
+	//permutation has no fixed point;
+	public boolean validForPEdge()
 	{
-		for(int i=0;i<4;i++)
+		return !hasFixedPoint();
+	}
+	
+	
+	//permutation doesn't send a color to its inverse
+	public boolean validForMEdge()
+	{
+		for(int i = 0;i<4;i++)
 		{
-			if(p1._value[i] == i || p2._value[i] == i || p3._value[i] == i)
+			if(_value[i] == (i+2)%4)
 			{
 				return false;
 			}
@@ -131,41 +136,8 @@ public class Permutation
 		return true;
 	}
 	
-	public static boolean validForMMP(Permutation p1,Permutation p2,Permutation p3)
-	{
-		for(int i=0;i<4;i++)
-		{
-			if(p1._value[i] == ((i+2)%4) || p2._value[i] == ((i+2)%4)  || p3._value[i] == i)
-			{
-				return false;
-			}
-		}
-		return true;
-	}
 	
-	public static boolean validForMPP(Permutation p1, Permutation p2, Permutation p3)
-	{
-		for(int i=0;i<4;i++)
-		{
-			if(p1._value[i] == ((i+2)%4) || p2._value[i] == i  || p3._value[i] == i)
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	public static boolean validForMMM(Permutation p1,Permutation p2, Permutation p3)
-	{
-		for(int i=0;i<4;i++)
-		{
-			if(p1._value[i] == ((i+2)%4) || p2._value[i] == ((i+2)%4)  || p3._value[i] == ((i+2)%4))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
+
 	// getting the set of all subset of size k composed with elements of
 		// original set
 		public static <V> List<List<V>> subsets(List<V> set, int k, V start) {

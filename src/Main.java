@@ -57,14 +57,13 @@ public class Main
 								{
 									Permutation p = new Permutation(i,j,k,l);
 									everyPermutation.add(p);
-									if(p.isInvolutive())
+									boolean validP = p.validForPEdge();
+									boolean validM = p.validForMEdge();
+									if((validP || validM) /*&& !(validP && validM)*/)
 									{
-										involutivePermutation.add(p);
+										validPermutation.add(p);
 									}
-									if(p.hasFixedPoint())
-									{
-										fixedPointPermutation.add(p);
-									}
+									
 								}
 							}
 						}
@@ -72,9 +71,8 @@ public class Main
 				}
 			}
 		}
-		
-		validPermutation.addAll(everyPermutation);
-		System.out.println("We have " + everyPermutation.size() + " permutations in total.");
+
+		System.out.println("We have " + everyPermutation.size() + " permutations in total; " + validPermutation.size() + " are valid among them.");
 		
 		
 		Iterator<Permutation> it1 = validPermutation.iterator();
@@ -93,61 +91,234 @@ public class Main
 				Permutation p2 = it2.next();
 				Permutation p3 = p1.compose(p2);
 				p3 = p3.inverse();
-				validTriplet.add(new Triplet(p1, p2, p3));
+				Triplet t1,t2,t3;
+				t1 = new Triplet(p1, p2, p3);
+				t2 = new Triplet(p2, p3, p1);
+				t3 = new Triplet(p3, p1, p2);
+				validTriplet.add(t1);
+				validTriplet.add(t2);
+				validTriplet.add(t3);
 				if(!mapTriplet.containsKey(p3))
 				{
 					mapTriplet.put(p3, new HashSet<>());
 				}
 				mapTriplet.get(p3).add(new Pair<>(p1,p2));
+				
+				
 				if(!mapPermSetTriplet.containsKey(p1))
 				{
 					mapPermSetTriplet.put(p1, new HashSet<>());
 				}
-				mapPermSetTriplet.get(p1).add(new Triplet(p1, p2, p3));
+				mapPermSetTriplet.get(p1).add(t1);
+				mapPermSetTriplet.get(p1).add(t2);
+				mapPermSetTriplet.get(p1).add(t3);
 				
 				if(!mapPermSetTriplet.containsKey(p2))
 				{
 					mapPermSetTriplet.put(p2, new HashSet<>());
 				}
-				mapPermSetTriplet.get(p2).add(new Triplet(p1, p2, p3));
+				mapPermSetTriplet.get(p2).add(t1);
+				mapPermSetTriplet.get(p2).add(t2);
+				mapPermSetTriplet.get(p2).add(t3);
 				
 				
 				if(!mapPermSetTriplet.containsKey(p3))
 				{
 					mapPermSetTriplet.put(p3, new HashSet<>());
 				}
-				mapPermSetTriplet.get(p3).add(new Triplet(p1, p2, p3));
+				mapPermSetTriplet.get(p3).add(t1);
+				mapPermSetTriplet.get(p3).add(t2);
+				mapPermSetTriplet.get(p3).add(t3);
 			}
 		}
 		
-		System.out.println(validTriplet.size() + " are valid.");
 
-		System.out.println(validTriplet);
 		
 		
 		//check that if a triplet is valid the two other that represent the same triplet are valid too
 		Iterator<Triplet> it;
 		it = validTriplet.iterator();
+		Set<Triplet> validTripletFinal = new HashSet<>();
 		while(it.hasNext())
 		{
 			Triplet tripletTest = it.next();
+			validTripletFinal.add(tripletTest);
 			Triplet tripletTest2 = new Triplet(tripletTest._p3, tripletTest._p1, tripletTest._p2);
 			Triplet tripletTest3 = new Triplet(tripletTest._p2, tripletTest._p3, tripletTest._p1);
-			if(!validTriplet.contains(tripletTest2) || !validTriplet.contains(tripletTest3))
-				System.out.println("not ok");
+			if(!validTriplet.contains(tripletTest2))
+			{
+				validTripletFinal.add(tripletTest2);
+			}
+				//System.out.println("-----------------ERROR: " + tripletTest + " is a valid triplet: not " + tripletTest2 + " --------------");
+			if(!validTriplet.contains(tripletTest3))
+			{
+				validTripletFinal.add(tripletTest3);
+			}
+				//System.out.println("-----------------ERROR: " + tripletTest + " is a valid triplet: not " + tripletTest3 + " --------------");
 		}
+		
+		System.out.println(validTripletFinal.size() + "triplets are valid.");
+
+		System.out.println(validTripletFinal);
+		
+		validTriplet = validTripletFinal;
 		
 		
 		//list potential switch
 		//Set<Pair<Permutation,Pair<Pair<Permutation,Permutation>,Pair<Permutation,Permutation>>>> setPotentialSwitch = new HashSet<>();
 		Set<Pair<Permutation,Permutation>> setGoodSwitch = new HashSet<>();
-		Set<Pair<Permutation,Permutation>> setSuperGoodSwitch = new HashSet<>();
+		Set<Pair<Permutation,Permutation>> setNotSuperGoodSwitch = new HashSet<>();
+		Map<Permutation,Set<Triplet>> mapPermSetTripletRemaining = new HashMap<>();
+		Map<Pair<Permutation,Permutation>, Map<Permutation,Pair<Permutation,Permutation>>> mapSwitch= new HashMap<>();
 		
 		Map<Pair<Pair<Permutation,Permutation>, Permutation>,Pair<Permutation,Permutation>> mapSuperGoodSwitch = new HashMap<>();
 		
+		Map<Pair<Permutation,Permutation>,Set<Triplet>> mapSwitchSetTripletOk = new HashMap<>();
+		
+		
+		
+		
+		Iterator<Permutation> i1,i2,i3,i4;
+		i1 = validPermutation.iterator();
+		while(i1.hasNext())
+		{
+			Permutation p1 = i1.next();
+			i2 = validPermutation.iterator();
+			while(i2.hasNext())
+			{
+				Permutation p2 = i2.next();
+				if(!p1.equals(p2))
+				{
+					mapSwitchSetTripletOk.put(new Pair<>(p1,p2), new HashSet<>());
+					mapSwitch.put(new Pair<>(p1,p2), new HashMap<>());
+				}
+				
+			}
+		}
+		i1 = validPermutation.iterator();
+		while(i1.hasNext())
+		{
+			Permutation p1 = i1.next();
+			i2 = validPermutation.iterator();
+			while(i2.hasNext())
+			{
+				Permutation p2 = i2.next();
+				i3 = validPermutation.iterator();
+				while(i3.hasNext())
+				{
+					Permutation p3 = i3.next();
+					
+					if(!p1.equals(p3))
+					{
+						i4 = validPermutation.iterator();
+						while(i4.hasNext())
+						{
+							Permutation p4 = i4.next();
+							Permutation prod1 = p1.compose(p2);
+							Permutation prod2 = p3.compose(p4);
+							if(prod1.equals(prod2))
+							{
+								Permutation thirdPerm = prod1.inverse();
+								Pair<Permutation,Permutation> switchPerm = new Pair<>(p1,p3);
+								Pair<Permutation,Permutation> otherSwitch = new Pair<>(p2,p4);
+								Map<Permutation,Pair<Permutation,Permutation>> mapOtherSwitch;
+								Triplet t1,t2,t3; //the same triplet but with different order on the permutation
+								t1 = new Triplet(p1, p2, thirdPerm);
+								t2 = new Triplet(thirdPerm, p1, p2);
+								t3 = new Triplet(p2, thirdPerm, p1);
+								Set<Triplet> setTripletOk;
+								
+								//the corresponding list of triplets for the first member switch
+								mapOtherSwitch = mapSwitch.get(switchPerm);
+								setTripletOk = mapSwitchSetTripletOk.get(switchPerm);
+								if(mapOtherSwitch.containsKey(thirdPerm) && !mapOtherSwitch.get(thirdPerm).equals(otherSwitch))
+								{
+									setNotSuperGoodSwitch.add(switchPerm);
+								}
+								else
+								{
+									mapOtherSwitch.put(thirdPerm,otherSwitch);
+								}
+								
+								setTripletOk.add(t1);
+								setTripletOk.add(t2);
+								setTripletOk.add(t3);
+								
+								//the corresponding list of triplet for the second memeber of the switch
+								mapOtherSwitch = mapSwitch.get(otherSwitch);
+								setTripletOk = mapSwitchSetTripletOk.get(otherSwitch);
+								if(mapOtherSwitch.containsKey(thirdPerm) && !mapOtherSwitch.get(thirdPerm).equals(switchPerm))
+								{
+									setNotSuperGoodSwitch.add(otherSwitch);
+								}
+								else
+								{
+									mapOtherSwitch.put(thirdPerm,switchPerm);
+								}
+								setTripletOk.add(t1);
+								setTripletOk.add(t2);
+								setTripletOk.add(t3);
+							}
+						}
+						
+					}
+					
+				}
+			}
+		}
+		
+		System.out.println("We have:" + mapSwitch.size() + " possible switch.");
+		
+		
+		
+		//check for good switchs
+		for(Entry<Pair<Permutation,Permutation>,Map<Permutation,Pair<Permutation,Permutation>>> entry : mapSwitch.entrySet())
+		{
+			Pair<Permutation,Permutation> switchPerm = entry.getKey();
+			Set<Triplet> setTripletInvolved = mapPermSetTriplet.get(switchPerm.first());
+			Set<Triplet> setTripletOk = mapSwitchSetTripletOk.get(switchPerm);
+			Map<Permutation,Pair<Permutation,Permutation>> mapOtherSwitch = mapSwitch.get(switchPerm);
+			/*System.out.println("For switch:" + switchPerm + " we have:" + setTripletInvolved.size() + " triplet involved with:" + switchPerm.first());
+			System.out.println("Among them:" + setTripletOk.size() +  " are ok.");*/
+			if(setTripletInvolved.size() == setTripletOk.size())
+			{
+				System.out.println("The switch:" + switchPerm + " is good.");
+				setGoodSwitch.add(switchPerm);
+			}
+			else
+			{
+				Set<Triplet> setTripletNotOk = new HashSet<>();
+				setTripletNotOk.addAll(setTripletInvolved);
+				setTripletNotOk.removeAll(setTripletOk);
+				System.out.println("The switch: " + switchPerm + " is INVOLVED IN " + setTripletInvolved.size() + " triplets:");
+				System.out.println(setTripletInvolved);
+				System.out.println("The switch: " + switchPerm + " is OK for " + setTripletOk.size() + " triplets:");
+				System.out.println(setTripletOk);
+				System.out.println("The switch: " + switchPerm + " is NOT OK for " + setTripletNotOk.size() + " triplets:");
+				System.out.println(setTripletNotOk);
+			}
+			
+		}
+		
+		Set<Pair<Permutation,Permutation>> setSuperGoodSwitch = new HashSet<>();
+		setSuperGoodSwitch.addAll(setGoodSwitch);
+		setSuperGoodSwitch.removeAll(setNotSuperGoodSwitch);
+		
+		System.out.println("We have:" + mapSwitch.size() + " possible switch.");
+		System.out.println("And we have:" + setGoodSwitch.size() + " good switch among them.");
+		System.out.println("But " + setNotSuperGoodSwitch.size() + " are not super good.");
+		System.out.println("Finaly we have:" + setSuperGoodSwitch.size() + " super good switch.");
+		
+		System.setOut(console);
+		
+		
+		
+		
+		
+		
 		//First-order switch mean that the unchanged permutation is the third in the triplet
 		//second-order switch means that the unchanged permutation is the second one
-		Iterator<Permutation> itPerm1 = validPermutation.iterator();
+		/*Iterator<Permutation> itPerm1 = validPermutation.iterator();
 		while(itPerm1.hasNext())
 		{
 			Permutation p1 = itPerm1.next();
@@ -221,7 +392,7 @@ public class Main
 							//second order switch
 							else if(p1.equals(triplet._p2))
 							{
-								Set<Pair<Permutation,Permutation>> setSecondOrderPossiblePair = mapTriplet.get(triplet._p2);
+								Set<Pair<Permutation,Permutation>> setSecondOrderPossiblePair = mapTriplet.get(triplet._p3);
 								if(setSecondOrderPossiblePair.size() != 1)
 								{
 									Pair<Permutation,Permutation> pair1 = null;
@@ -287,9 +458,13 @@ public class Main
 							{
 								pairSwitchTriplet= new Pair<>(permSwitch,triplet._p2);
 							}
-							if(mapSuperGoodSwitch.containsKey(pairSwitchTriplet))
+							if(otherPerm== null || (mapSuperGoodSwitch.containsKey(pairSwitchTriplet) && !otherPerm.equals(mapSuperGoodSwitch.get(pairSwitchTriplet))))
 							{
-								System.out.println("----------------NOT SUPER GOOD----------------------");
+								System.out.println("----------------"+ pairSwitchTriplet + "NOT SUPER GOOD----------------------");
+								if(otherPerm != null)
+									System.out.println("Switch:" + pairSwitchTriplet + ":" + otherPerm + " is not super good because:" + mapSuperGoodSwitch.get(pairSwitchTriplet) + " is already a swicth.");
+								else
+									System.out.println("---------------------NOT GOOD--------------------");
 							}
 							else
 							{
@@ -401,8 +576,8 @@ public class Main
 		{
 			e.printStackTrace();
 		}
+		*/
 		
-		System.setOut(console);
 		
 		System.out.println("Algo finished.");
 		
